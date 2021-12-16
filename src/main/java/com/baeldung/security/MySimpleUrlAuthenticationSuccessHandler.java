@@ -80,31 +80,39 @@ public class MySimpleUrlAuthenticationSuccessHandler implements AuthenticationSu
     }
 
     protected String determineTargetUrl(final Authentication authentication) {
-        boolean isUser = false;
-        boolean isAdmin = false;
+        boolean hasReadPrivilege = false;
+        boolean hasWritePrivilege = false;
+        boolean hasChangePasswordPrivilege = false;
         final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         for (final GrantedAuthority grantedAuthority : authorities) {
-            if (grantedAuthority.getAuthority().equals("READ_PRIVILEGE")) {
-                isUser = true;
-            } else if (grantedAuthority.getAuthority().equals("WRITE_PRIVILEGE")) {
-                isAdmin = true;
-                isUser = false;
-                break;
+            if(grantedAuthority.getAuthority().equals("READ_PRIVILEGE")){
+                hasReadPrivilege = true;
+            } else if(grantedAuthority.getAuthority().equals("WRITE_PRIVILEGE")){
+                hasWritePrivilege = true;
+            } else if(grantedAuthority.getAuthority().equals("CHANGE_PASSWORD_PRIVILEGE")){
+                hasChangePasswordPrivilege = true;
             }
         }
-        if (isUser) {
-        	 String username;
-             if (authentication.getPrincipal() instanceof User) {
-             	username = ((User)authentication.getPrincipal()).getEmail();
-             }
-             else {
-             	username = authentication.getName();
-             }
+
+        if(hasChangePasswordPrivilege){
+            // admin
+            return "/console";
+        } else if(hasWritePrivilege){
+            // manager
+            return "/management";
+        } else if(hasReadPrivilege){
+            // user
+            String username;
+            if (authentication.getPrincipal() instanceof User) {
+                username = ((User)authentication.getPrincipal()).getEmail();
+            }
+            else {
+                username = authentication.getName();
+            }
 
             return "/homepage.html?user="+username;
-        } else if (isAdmin) {
-            return "/console";
         } else {
+            // no role
             throw new IllegalStateException();
         }
     }
